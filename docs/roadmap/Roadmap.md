@@ -114,23 +114,6 @@ Implement lightweight client-side filtering to avoid storing useless data.
 
 ---
 
-## ### 2.7 Sessionization Modes
-How to segment workflows at the capture stage:
-
-#### **Option A: Time-based segmentation**
-- Break session if idle > X seconds
-
-#### **Option B: Navigation-based segmentation**
-- New session when page changes or SPA route changes
-
-#### **Option C: Hybrid segmentation (recommended)**
-- Combine time + navigation cues
-
-#### **Option D: ML-based segmentation (future)**
-- Predict logical boundaries based on event semantics
-
----
-
 # # 3. Pattern Mining & Understanding Layer
 This layer transforms raw event streams into meaningful workflows and identifies patterns.
 

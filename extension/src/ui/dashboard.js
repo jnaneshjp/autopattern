@@ -36,8 +36,6 @@ function openDB() {
     });
 }
 
-
-
 // ---------- Load All Events from DB ----------
 async function loadEvents() {
     const db = await openDB();
@@ -62,8 +60,6 @@ async function loadEvents() {
         }
     });
 }
-
-
 
 // ---------- Group Events Into Workflows ----------
 function groupWorkflows(events) {
@@ -97,6 +93,33 @@ function groupWorkflows(events) {
     return workflows;
 }
 
+// ---------- Calculate Statistics ----------
+function calculateStats(events, workflows) {
+    const eventTypes = new Set();
+    let filteredCount = 0;
+
+    events.forEach(event => {
+        eventTypes.add(event.event);
+        if (event.combinedCount && event.combinedCount > 1) {
+            filteredCount += (event.combinedCount - 1);
+        }
+    });
+
+    return {
+        total: events.length,
+        workflows: workflows.length,
+        filtered: filteredCount,
+        types: eventTypes.size
+    };
+}
+
+// ---------- Update Stats Display ----------
+function updateStats(stats) {
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-workflows').textContent = stats.workflows;
+    document.getElementById('stat-filtered').textContent = stats.filtered;
+    document.getElementById('stat-types').textContent = stats.types;
+}
 
 // ---------- Render Sidebar List ----------
 function renderWorkflowList(workflows) {
@@ -111,14 +134,24 @@ function renderWorkflowList(workflows) {
     workflows.forEach((wf, idx) => {
         const div = document.createElement("div");
         div.className = "workflow-item";
-        div.textContent = `Workflow ${idx + 1} (${wf.length} events)`;
+        
+        const filteredEvents = wf.filter(e => e.combinedCount && e.combinedCount > 1);
+        const isFiltered = filteredEvents.length > 0;
+        
+        if (isFiltered) {
+            div.classList.add('filtered');
+        }
+        
+        div.innerHTML = `
+            Workflow ${idx + 1} (${wf.length} events)
+            ${isFiltered ? '<span class="filter-badge">Filtered</span>' : ''}
+        `;
 
         div.onclick = () => renderWorkflowDetails(wf, idx + 1);
 
         list.appendChild(div);
     });
 }
-
 
 // ---------- Render Workflow Details ----------
 function renderWorkflowDetails(workflow, number) {
@@ -131,6 +164,11 @@ function renderWorkflowDetails(workflow, number) {
     workflow.forEach((event, idx) => {
         const div = document.createElement("div");
         div.className = "event";
+        
+        const isCombined = event.combinedCount && event.combinedCount > 1;
+        if (isCombined) {
+            div.classList.add('filtered');
+        }
 
         const header = `
             <div style="font-weight:bold;">
@@ -138,6 +176,7 @@ function renderWorkflowDetails(workflow, number) {
                 <span style="color:#888;font-size:12px;">
                     (${new Date(event.timestamp).toLocaleTimeString()})
                 </span>
+                ${isCombined ? `<span class="combined-badge">Combined ${event.combinedCount}x</span>` : ''}
             </div>
         `;
 
@@ -188,7 +227,34 @@ function renderWorkflowDetails(workflow, number) {
     });
 }
 
+// ---------- CSV Export Handlers ----------
+const csvExporter = new CSVExporter();
+let currentEvents = [];
+let currentWorkflows = [];
 
+document.getElementById('export-csv').onclick = () => {
+    if (currentEvents.length === 0) {
+        alert('No events to export');
+        return;
+    }
+    csvExporter.exportEvents(currentEvents);
+};
+
+document.getElementById('export-workflows-csv').onclick = () => {
+    if (currentWorkflows.length === 0) {
+        alert('No workflows to export');
+        return;
+    }
+    csvExporter.exportWorkflows(currentWorkflows);
+};
+
+document.getElementById('export-summary').onclick = () => {
+    if (currentEvents.length === 0) {
+        alert('No events to export');
+        return;
+    }
+    csvExporter.exportSummary(currentEvents);
+};
 
 // ---------- INIT ----------
 async function start() {
@@ -201,6 +267,14 @@ async function start() {
         const workflows = groupWorkflows(events);
 
         console.log("Grouped workflows:", workflows);
+
+        // Store for export
+        currentEvents = events;
+        currentWorkflows = workflows;
+
+        // Calculate and update stats
+        const stats = calculateStats(events, workflows);
+        updateStats(stats);
 
         renderWorkflowList(workflows);
     } catch (err) {

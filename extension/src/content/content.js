@@ -1,13 +1,23 @@
-// content.js - Advanced Task Mining + Expanded UI Capture
+// content.js - Advanced Task Mining + Noise Reduction
 // ---------------------------------------------------------
 
 const CAPTURE_INPUT_VALUE = false;
 const CAPTURE_INPUT_HASH = true;
 
+// Import noise reducer
+const noiseReducer = new NoiseReducer();
+
 // ------------------ Safe Send ------------------
 function safeSend(msg) {
+    // Apply noise reduction before sending
+    const filtered = noiseReducer.processEvent(msg);
+    
+    if (!filtered) {
+        return; // Event was filtered out
+    }
+    
     try {
-        chrome.runtime.sendMessage(msg, () => {
+        chrome.runtime.sendMessage(filtered, () => {
             if (chrome.runtime.lastError) {}
         });
     } catch (e) {}
@@ -422,4 +432,4 @@ document.addEventListener("visibilitychange", () => {
     }, 500);
 })();
 
-console.log("CONTENT SCRIPT LOADED — FINAL, PATCHED, STABLE");
+console.log("CONTENT SCRIPT LOADED — WITH NOISE REDUCTION");

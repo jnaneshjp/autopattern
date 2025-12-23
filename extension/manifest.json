@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Task Mining Data Collector",
   "version": "1.0",
-  "description": "Collects user interaction events for task mining.",
+  "description": "Collects user interaction events for task mining with noise reduction.",
   "permissions": [
     "tabs",
     "scripting",
@@ -12,26 +12,29 @@
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background/background.js"
   },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "src/ui/popup.html"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": [
+        "src/utils/noiseReduction.js",
+        "src/content/content.js"
+      ],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
       "resources": [
-        "dashboard.html",
-        "dashboard.js"
+        "src/ui/dashboard.html",
+        "src/ui/dashboard.js",
+        "src/utils/csvExporter.js"
       ],
       "matches": ["<all_urls>"]
     }
   ]
-  
 }

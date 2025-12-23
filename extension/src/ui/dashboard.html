@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Mining Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #121212;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        #header {
+            padding: 16px;
+            background: #1f1f1f;
+            font-size: 24px;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #export-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        #export-controls button {
+            padding: 8px 16px;
+            background: #0d7377;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #export-controls button:hover {
+            background: #0f9b8e;
+        }
+
+        #stats {
+            padding: 16px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            display: flex;
+            gap: 30px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0d7377;
+        }
+
+        #container {
+            display: flex;
+            height: calc(100vh - 140px);
+        }
+
+        #sidebar {
+            width: 300px;
+            background: #181818;
+            border-right: 1px solid #333;
+            overflow-y: auto;
+        }
+
+        #content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .workflow-item {
+            padding: 12px;
+            margin: 10px;
+            background: #222;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #333;
+        }
+
+        .workflow-item:hover {
+            background: #333;
+        }
+
+        .workflow-item.filtered {
+            background: #1a3a1a;
+            border-color: #2d5a2d;
+        }
+
+        .event {
+            padding: 10px;
+            margin: 10px 0;
+            background: #181818;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .event.filtered {
+            background: #1a2a1a;
+            border-color: #2d4a2d;
+        }
+
+        .filter-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #2d5a2d;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+
+        .combined-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #5a4d2d;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header">
+        <span>Task Mining Dashboard</span>
+        <div id="export-controls">
+            <button id="export-csv">Export Events CSV</button>
+            <button id="export-workflows-csv">Export Workflows CSV</button>
+            <button id="export-summary">Export Summary CSV</button>
+        </div>
+    </div>
+
+    <div id="stats">
+        <div class="stat-item">
+            <span class="stat-label">Total Events</span>
+            <span class="stat-value" id="stat-total">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Workflows</span>
+            <span class="stat-value" id="stat-workflows">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Filtered Events</span>
+            <span class="stat-value" id="stat-filtered">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Event Types</span>
+            <span class="stat-value" id="stat-types">0</span>
+        </div>
+    </div>
+
+    <div id="container">
+        <!-- LEFT: Workflows -->
+        <div id="sidebar">
+            <h3 style="padding-left:10px;">Workflows</h3>
+            <div id="workflow-list"></div>
+        </div>
+
+        <!-- RIGHT: Selected Workflow Details -->
+        <div id="content">
+            <h2 id="workflow-title">Select a workflow</h2>
+            <div id="workflow-events"></div>
+        </div>
+    </div>
+
+    <script src="../utils/csvExporter.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
