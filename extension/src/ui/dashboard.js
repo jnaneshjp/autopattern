@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 function openDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open("TaskMiningDB", 4);
+        const request = indexedDB.open("TaskMiningDB", 5);
 
         request.onupgradeneeded = (e) => {
             console.log("Dashboard upgrade needed — stores:", e.target.result.objectStoreNames);
@@ -155,21 +155,18 @@ function renderWorkflowList(workflows) {
 
 // ---------- Render Workflow Details ----------
 function renderWorkflowDetails(workflow, number) {
-    document.getElementById("workflow-title").textContent =
-        `Workflow ${number}`;
-
+    document.getElementById("workflow-title").textContent = `Workflow ${number}`;
     const container = document.getElementById("workflow-events");
     container.innerHTML = "";
 
     workflow.forEach((event, idx) => {
         const div = document.createElement("div");
         div.className = "event";
-        
-        const isCombined = event.combinedCount && event.combinedCount > 1;
-        if (isCombined) {
-            div.classList.add('filtered');
-        }
 
+        const isCombined = event.combinedCount && event.combinedCount > 1;
+        if (isCombined) div.classList.add('filtered');
+
+        // ---------- Header ----------
         const header = `
             <div style="font-weight:bold;">
                 ${idx + 1}. ${event.event}
@@ -180,8 +177,16 @@ function renderWorkflowDetails(workflow, number) {
             </div>
         `;
 
+        // ---------- Canonical DATA (single source of truth) ----------
+        const canonical = event.canonical || {};
+
         const core = `
             <div style="margin-left:10px;">
+                <div><strong>Canonical ID:</strong> ${canonical.canonical_id || "N/A"}</div>
+                <div><strong>Selector:</strong> ${canonical.selector || "N/A"}</div>
+                <div><strong>XPath:</strong> ${canonical.xpath || "N/A"}</div>
+                <div><strong>Type:</strong> ${canonical.type || "N/A"}</div>
+                <hr>
                 <div><strong>URL:</strong> ${event.url}</div>
                 <div><strong>Title:</strong> ${event.title}</div>
                 <div><strong>ScrollY:</strong> ${event.scrollY}</div>
@@ -190,42 +195,19 @@ function renderWorkflowDetails(workflow, number) {
             </div>
         `;
 
-        const data = event.data || {};
-
+        // ---------- Canonical Only Interaction (removed raw DOM noise) ----------
         const interaction = `
             <details style="margin-left:10px;margin-top:5px;">
-                <summary>Interaction Data</summary>
-                <pre>${JSON.stringify({
-                    element_type: data.element_type,
-                    field_name: data.field_name,
-                    input: data.input,
-                    x: data.x,
-                    y: data.y,
-                    bbox: data.bbox,
-                    button: data.button,
-                    aria_label: data.aria_label,
-                    role: data.role,
-                    tag: data.tag,
-                    text: data.text
-                }, null, 2)}</pre>
+                <summary>Canonical Interaction</summary>
+                <pre>${JSON.stringify(canonical, null, 2)}</pre>
             </details>
         `;
 
-        const dom = `
-            <details style="margin-left:10px;margin-top:5px;">
-                <summary>DOM / Selector Data</summary>
-                <pre>${JSON.stringify({
-                    css_selector: data.css_selector,
-                    xpath: data.xpath,
-                    dom_context: data.dom_context
-                }, null, 2)}</pre>
-            </details>
-        `;
-
-        div.innerHTML = header + core + interaction + dom;
+        div.innerHTML = header + core + interaction;
         container.appendChild(div);
     });
 }
+
 
 // ---------- CSV Export Handlers ----------
 const csvExporter = new CSVExporter();
