@@ -34,15 +34,23 @@ function debounce(fn, delay) {
 function getXPath(el) {
     if (!el) return null;
     let path = '';
-    while (el && el.nodeType === 1) {
+    let current = el;
+    
+    while (current && current.nodeType === 1) {
+        // Optimization: If we find a stable ID, we can stop and make the path relative to it
+        if (current.id && !isDynamicId(current.id)) {
+            path = `//*[@id="${current.id}"]` + path;
+            return path;
+        }
+        
         let idx = 1;
-        let sib = el.previousSibling;
+        let sib = current.previousSibling;
         while (sib) {
-            if (sib.nodeType === 1 && sib.nodeName === el.nodeName) idx++;
+            if (sib.nodeType === 1 && sib.nodeName === current.nodeName) idx++;
             sib = sib.previousSibling;
         }
-        path = `/${el.nodeName.toLowerCase()}[${idx}]` + path;
-        el = el.parentNode;
+        path = `/${current.nodeName.toLowerCase()}[${idx}]` + path;
+        current = current.parentNode;
     }
     return path;
 }
@@ -77,17 +85,13 @@ function getSelector(el) {
         return `[aria-label="${el.getAttribute('aria-label')}"]`;
     }
     
-    // 5. Text-based selector for links/buttons
-    const tag = el.tagName.toLowerCase();
-    const text = el.innerText?.trim().slice(0, 50);
-    if (text && ['a', 'button', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
-        // Use XPath text selector as fallback indicator
-        return `${tag}:text("${text}")`;
+    // 5. Class name (if specific enough)
+    if (el.className && typeof el.className === 'string' && el.className.trim().length > 0) {
+        const classes = el.className.split(/\s+/).filter(c => !c.startsWith('ng-') && !c.startsWith('react-'));
+        if (classes.length > 0 && classes.length < 3) {
+            return `.${classes.join('.')}`;
+        }
     }
-    
-    // 6. role attribute
-    const role = el.getAttribute('role');
-    if (role) return `[role="${role}"]`;
     
     return null;
 }
@@ -108,49 +112,61 @@ function isActionableElement(el) {
 
 // ---------- Event Builder ----------
 function buildEvent(type, el, extra = {}) {
-    return {
-        event: type,
+    // Find closest link for href if not on the element itself
+    const closestLink = el?.closest ? el.closest('a') : null;
+    const href = el?.href || closestLink?.href || null;
+
+    const eventData = {
+        type: type, // Renamed from 'event' to 'type' for consistency
         timestamp: Date.now(),
         url: location.href,
         title: document.title,
-
-        automation: {
-            selector: getSelector(el),
-            xpath: getXPath(el),
-            tag: el?.tagName || null,
-            inputType: el?.getAttribute?.('type') || null
-        },
-
-        raw: extra
+        
+        // Element details
+        tagName: el?.tagName?.toLowerCase() || null,
+        id: el?.id || null,
+        className: el?.className || null,
+        name: el?.name || null,
+        value: el?.value || extra.value || null,
+        href: href,
+        text: el?.innerText?.slice(0, 100) || extra.text || null,
+        
+        // Selectors
+        selector: getSelector(el),
+        xpath: getXPath(el),
+        
+        // Extra data
+        ...extra
     };
+
+    return eventData;
 }
 
 // ---------- CLICK ----------
 document.addEventListener('click', e => {
-    if (!isActionableElement(e.target)) return; // Filter noise
-    recordEvent(buildEvent('click', e.target, {
-        text: e.target.innerText?.slice(0, 80) || null
-    }));
+    if (!isActionableElement(e.target)) return;
+    recordEvent(buildEvent('click', e.target));
 }, true);
 
-// ---------- INPUT ----------
-// Use longer debounce to capture final value, not every keystroke
+// ---------- INPUT & CHANGE ----------
+// Capture input for text fields
 document.addEventListener('input', debounce(e => {
-    const value = e.target.value || '';
-    recordEvent(buildEvent('input', e.target, {
-        value: value.slice(0, 200), // Capture actual value (truncated for safety)
-        length: value.length
-    }));
+    if (e.target.tagName === 'SELECT') return; // Handle selects in 'change'
+    recordEvent(buildEvent('input', e.target));
 }, 500), true);
 
-// ---------- KEYBOARD (Enter key for forms) ----------
+// Capture change for select elements and checkboxes/radios
+document.addEventListener('change', e => {
+    const tag = e.target.tagName;
+    if (tag === 'SELECT' || e.target.type === 'checkbox' || e.target.type === 'radio') {
+        recordEvent(buildEvent('change', e.target));
+    }
+}, true);
+
+// ---------- KEYBOARD (Enter key) ----------
 document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-        const value = e.target.value || '';
-        recordEvent(buildEvent('keypress_enter', e.target, {
-            value: value.slice(0, 200), // Capture what was submitted
-            length: value.length
-        }));
+    if (e.key === 'Enter') {
+        recordEvent(buildEvent('keydown', e.target, { key: 'Enter' }));
     }
 }, true);
 
