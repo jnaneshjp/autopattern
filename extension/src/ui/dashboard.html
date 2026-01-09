@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Automate Workflows</title>
+    <meta charset="UTF-8">
+    <title>AutoPattern Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -10,107 +15,189 @@
         }
 
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
-            color: #2c3e50;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e8e8e8;
             min-height: 100vh;
-        }
-
-        #header {
-            padding: 32px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: slideDown 0.6s ease-out;
         }
 
-        @keyframes slideDown {
-            from {
-                transform: translateY(-20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        #header h1 {
-            font-size: 32px;
-            font-weight: 700;
-            color: white;
-            letter-spacing: -0.5px;
-        }
-
-        #stats {
-            padding: 24px;
-            background: rgba(255, 255, 255, 0.9);
-            margin: 24px;
-            margin-bottom: 0;
-            border-radius: 16px;
-            display: flex;
-            gap: 32px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            animation: fadeIn 0.8s ease-out 0.2s both;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .stat-item {
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: rgba(255, 255, 255, 0.02);
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 24px 16px;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 8px;
+            margin-bottom: 32px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e8e8e8;
+        }
+
+        .nav-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            color: #a5b4fc;
+        }
+
+        .nav-icon {
+            font-size: 18px;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            width: 280px;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e8e8e8;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: #6b7280;
+        }
+
+        .search-icon {
+            color: #6b7280;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+            padding: 20px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px 24px;
+            min-width: 160px;
         }
 
         .stat-label {
             font-size: 11px;
-            color: #7f8c8d;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
             font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
         }
 
         .stat-value {
-            font-size: 36px;
+            font-size: 28px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #a855f7 100%);
             -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        #main {
-            padding: 24px;
-            max-width: 1400px;
-            margin: 0 auto;
+        /* Workflows Grid */
+        .content {
+            flex: 1;
+            padding: 24px 32px;
+            overflow-y: auto;
         }
 
-        #workflows-list {
+        .workflows-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 24px;
-            animation: fadeIn 0.8s ease-out 0.4s both;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
         }
 
         .workflow-card {
-            background: white;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid transparent;
+            padding: 20px;
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
@@ -121,151 +208,139 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
+            height: 3px;
             background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
             transform: scaleX(0);
             transform-origin: left;
-            transition: transform 0.3s ease-out;
+            transition: transform 0.3s ease;
         }
 
         .workflow-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.25);
-            border-color: rgba(102, 126, 234, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateY(-4px);
         }
 
         .workflow-card:hover::before {
             transform: scaleX(1);
         }
 
-        .workflow-card h3 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #2c3e50;
+        .workflow-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .workflow-name {
+            font-size: 16px;
+            font-weight: 600;
             word-break: break-word;
             line-height: 1.4;
         }
 
-        .workflow-card small {
+        .event-badge {
+            padding: 4px 10px;
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .workflow-meta {
             font-size: 13px;
-            color: #95a5a6;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            color: #6b7280;
+            margin-bottom: 16px;
         }
 
         .workflow-actions {
             display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #ecf0f1;
+            gap: 8px;
         }
 
-        .workflow-card button {
+        .btn {
             flex: 1;
-            padding: 10px 16px;
-            font-size: 13px;
+            padding: 10px 12px;
             border: none;
             border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .btn-view {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
         }
 
         .btn-view:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-view:active {
-            transform: translateY(0);
+            background: rgba(102, 126, 234, 0.3);
         }
 
         .btn-automate {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
         }
 
         .btn-automate:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
-        }
-
-        .btn-automate:active {
-            transform: translateY(0);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
         }
 
         .btn-delete {
-            background: #fee;
-            color: #e74c3c;
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            flex: 0;
+            padding: 10px 14px;
         }
 
         .btn-delete:hover {
-            background: #fdd;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.2);
+            background: rgba(239, 68, 68, 0.25);
         }
 
-        .btn-delete:active {
-            transform: translateY(0);
-        }
-
-        .btn-optimize {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-optimize:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-optimize:active {
-            transform: translateY(0);
-        }
-
-        .btn-optimize:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Modal Overlay */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 9999;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            backdrop-filter: blur(4px);
-            animation: fadeIn 0.3s ease-out;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         .modal-content {
-            background: white;
+            background: #1a1a2e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
-            padding: 32px;
-            max-width: 700px;
+            padding: 28px;
+            max-width: 600px;
             width: 100%;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideUp 0.3s ease;
         }
 
         @keyframes slideUp {
@@ -273,6 +348,7 @@
                 transform: translateY(20px);
                 opacity: 0;
             }
+
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -280,30 +356,20 @@
         }
 
         .modal-content h3 {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            margin-bottom: 16px;
-            color: #2c3e50;
-        }
-
-        .modal-content p {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-bottom: 16px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            margin-bottom: 20px;
         }
 
         .modal-content pre {
-            background: #f8f9fa;
-            padding: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
+            padding: 16px;
             overflow-x: auto;
             font-size: 12px;
             line-height: 1.6;
-            color: #2c3e50;
-            border: 1px solid #ecf0f1;
+            color: #9ca3af;
         }
 
         .modal-content button {
@@ -312,7 +378,7 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: 600;
             font-size: 14px;
@@ -320,125 +386,19 @@
         }
 
         .modal-content button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
         }
 
-        .modal-content button:active {
-            transform: translateY(0);
-        }
-
-        /* Optimization Result Modal */
-        .optimization-result {
-            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .optimization-result h3 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .optimization-section {
-            margin-bottom: 24px;
-            background: #f8f9fa;
-            padding: 16px;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-        }
-
-        .optimization-section h4 {
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #667eea;
-            margin-bottom: 12px;
-        }
-
-        .optimization-section p {
-            font-size: 14px;
-            color: #2c3e50;
-            line-height: 1.6;
-            margin: 8px 0;
-        }
-
-        .steps-list {
-            list-style: none;
-            counter-reset: step-counter;
-        }
-
-        .steps-list li {
-            counter-increment: step-counter;
-            padding: 8px 0;
-            padding-left: 28px;
-            position: relative;
-            font-size: 14px;
-            color: #2c3e50;
-        }
-
-        .steps-list li::before {
-            content: counter(step-counter);
-            position: absolute;
-            left: 0;
-            top: 8px;
-            width: 20px;
-            height: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .removed-steps {
-            background: #fff3cd;
-            border-left-color: #ffc107;
-        }
-
-        .removed-steps h4 {
-            color: #ff9800;
-        }
-
-        .confidence-bar {
-            width: 100%;
-            height: 8px;
-            background: #ecf0f1;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 8px;
-        }
-
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 4px;
-            transition: width 0.6s ease-out;
-        }
-
-        .confidence-text {
-            font-size: 13px;
-            color: #7f8c8d;
-            margin-top: 8px;
-            font-weight: 600;
-        }
-
+        /* Loading Spinner */
         .loading-spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 3px solid rgba(102, 126, 234, 0.3);
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(102, 126, 234, 0.2);
             border-radius: 50%;
             border-top-color: #667eea;
             animation: spin 0.8s linear infinite;
-            margin-right: 8px;
+            margin: 0 auto 16px;
         }
 
         @keyframes spin {
@@ -449,42 +409,52 @@
 
         .optimization-loading {
             text-align: center;
-            padding: 40px 20px;
+            padding: 40px;
         }
 
         .optimization-loading p {
-            font-size: 16px;
-            color: #2c3e50;
-            margin-top: 16px;
-            font-weight: 500;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .optimization-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid #667eea;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .optimization-section h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .optimization-section p {
+            font-size: 14px;
+            color: #d1d5db;
+            line-height: 1.6;
         }
 
         /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 60px 20px;
-            color: #95a5a6;
+            padding: 80px 20px;
+            color: #6b7280;
         }
 
-        .empty-state-icon {
+        .empty-icon {
             font-size: 64px;
-            margin-bottom: 20px;
-            display: block;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
 
         .empty-state p {
             font-size: 16px;
-            font-weight: 500;
         }
 
         /* Scrollbar */
@@ -504,133 +474,62 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(102, 126, 234, 0.5);
         }
-
-        #workflow-details {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        #workflow-details > div {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        #workflow-details h2 {
-            margin-bottom: 16px;
-        }
-
-        #workflow-details button {
-            padding: 8px 16px;
-            background: #0d7377;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-bottom: 16px;
-        }
-
-        .event {
-            margin: 12px 0;
-            padding: 12px;
-            background: #f9f9f9;
-            border-left: 3px solid #0d7377;
-            border-radius: 4px;
-        }
-
-        .event strong {
-            color: #0d7377;
-        }
-
-        .event details {
-            margin-top: 8px;
-        }
-
-        .event pre {
-            background: #f0f0f0;
-            padding: 8px;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-size: 11px;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-content button {
-            padding: 8px 16px;
-            margin-right: 8px;
-            margin-top: 12px;
-            background: #0d7377;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .modal-content button:hover {
-            background: #0f9b8e;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-        }
-
-        .empty-state svg {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
     </style>
 </head>
+
 <body>
-    <div id="header">
-        <h1>Automate Workflows</h1>
-    </div>
-
-    <div id="stats">
-        <div class="stat-item">
-            <span class="stat-label">Total Workflows</span>
-            <span class="stat-value" id="stat-workflows">0</span>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">⚡</div>
+            <span class="brand-name">AutoPattern</span>
         </div>
-    </div>
 
-    <div id="main">
-        <div id="workflows-list"></div>
-    </div>
+        <nav class="nav">
+            <div class="nav-item active">
+                <span class="nav-icon">📋</span>
+                Workflows
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">🤖</span>
+                Automations
+            </div>
+            <div class="nav-item">
+                <span class="nav-icon">⚙️</span>
+                Settings
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main">
+        <header class="header">
+            <h1 class="header-title">Workflows</h1>
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="Search workflows...">
+            </div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">Total Workflows</div>
+                <div class="stat-value" id="stat-workflows">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Events</div>
+                <div class="stat-value" id="stat-events">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Automations Run</div>
+                <div class="stat-value" id="stat-automations">0</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="workflows-grid" id="workflows-list"></div>
+        </div>
+    </main>
 
     <script src="dashboard.js"></script>
 </body>
+
 </html>

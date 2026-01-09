@@ -33,8 +33,9 @@ function getXPath(el) {
 }
 
 function getSelector(el) {
+    if (!el) return null;
     if (el.id) return `#${el.id}`;
-    if (el.getAttribute('data-testid')) {
+    if (el.getAttribute && el.getAttribute('data-testid')) {
         return `[data-testid="${el.getAttribute('data-testid')}"]`;
     }
     return null;
