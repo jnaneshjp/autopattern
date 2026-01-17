@@ -93,6 +93,10 @@ class WorkflowLoader:
         data = {}
         
         for key, value in row.items():
+            # Skip None or empty keys
+            if not key:
+                continue
+                
             if key.startswith("data."):
                 # Extract the nested key
                 nested_key = key[5:]  # Remove 'data.' prefix

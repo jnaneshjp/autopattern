@@ -12,6 +12,14 @@ import asyncio
 import sys
 from pathlib import Path
 
+# Fix Windows console encoding for emoji support
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
 from .config import config
 from .workflow_loader import WorkflowLoader
 from .llm_client import LLMClient

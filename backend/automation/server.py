@@ -7,6 +7,8 @@ import json
 import asyncio
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 from .config import config
 from .llm_client import LLMClient
@@ -96,29 +98,67 @@ class AutomationAPIHandler(BaseHTTPRequestHandler):
             
             workflow = Workflow(workflow_id=str(workflow_id), events=events)
             
+            print(f"📥 Received {len(events)} events for workflow {workflow_id}")
+            if events:
+                print(f"🔍 First event type: {events[0].event_type}, data keys: {list(events[0].data.keys())}")
+            
             # Generate task description
             try:
                 config.validate()
                 llm_client = LLMClient()
                 task_description = llm_client.generate_task_description(workflow)
-            except ValueError as e:
-                # GitHub PAT not configured - use workflow summary directly
-                task_description = f"Perform the following actions:\n{workflow.summary}"
+            except Exception as e:
+                print(f"⚠️ LLM task generation failed: {e}")
+                print(f"🔄 Falling back to raw workflow summary")
+                task_description = f"Perform the high-level task represented by these actions: {workflow.summary}"
             
-            # Run automation
-            runner = AutomationRunner()
-            result = asyncio.run(runner.run_task(task_description))
+            # Run automation in a separate thread to avoid event loop conflicts
+            def run_in_thread():
+                """Run async code in a separate thread with its own event loop."""
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    runner = AutomationRunner()
+                    return loop.run_until_complete(runner.run_task(task_description))
+                finally:
+                    loop.close()
+            
+            # Execute in thread pool
+            print(f"\n🎯 Executing automation for workflow: {workflow_id}")
+            print(f"📝 Task description: {task_description}")
+            
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(run_in_thread)
+                result = future.result(timeout=300)  # 5 minute timeout
+            
+            print(f"\n✅ Automation result: Success={result['success']}")
+            if result.get('error'):
+                print(f"❌ Error: {result['error']}")
+            
+            # Convert history to string if it's not JSON serializable
+            history = result.get('history')
+            if history is not None:
+                try:
+                    json.dumps(history)  # Test if serializable
+                except (TypeError, ValueError):
+                    history = str(history)  # Convert to string if not
             
             self._send_json_response(200, {
                 'success': result['success'],
                 'task_description': task_description,
                 'error': result.get('error'),
+                'history': history,
             })
             
         except Exception as e:
+            import traceback
+            error_traceback = traceback.format_exc()
+            print(f"❌ Error in automate_workflow: {e}")
+            print(error_traceback)
             self._send_json_response(500, {
                 'success': False,
                 'error': str(e),
+                'traceback': error_traceback,
             })
     
     def _handle_optimize_workflow(self, data: dict):
