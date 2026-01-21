@@ -36,7 +36,8 @@
       "resources": [
         "src/ui/dashboard.html",
         "src/ui/dashboard.js",
-        "src/utils/csvExporter.js"
+        "src/utils/csvExporter.js",
+        "lib/mermaid.min.js"
       ],
       "matches": [
         "<all_urls>"

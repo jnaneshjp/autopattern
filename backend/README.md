@@ -44,11 +44,19 @@ pip install -e .
 Start the API server for extension integration:
 
 ```bash
+# Using uv (recommended)
+uv run python -m automation.main --server --port 5001
+
+# Or activate venv first
+.\.venv\Scripts\activate  # Windows
 python -m automation.main --server --port 5001
 ```
 
 Endpoints:
 - `GET /api/health` - Health check
+- `GET /api/settings` - Get current settings
+- `PUT /api/settings` - Update settings
+- `POST /api/describe` - Generate workflow description and steps
 - `POST /api/automate` - Automate from workflow events
 - `POST /api/automate/task` - Automate from task description
 - `WebSocket /ws/automation` - Human-in-the-loop interactions
@@ -57,16 +65,16 @@ Endpoints:
 
 ```bash
 # Run with a task description
-python -m automation.main --task "Navigate to google.com and search for Python"
+uv run python -m automation.main --task "Navigate to google.com and search for Python"
 
 # Run with recorded workflow
-python -m automation.main --workflow <path-to-csv>
+uv run python -m automation.main --workflow <path-to-csv>
 
 # Use your real Chrome profile (with cookies, extensions)
-python -m automation.main --task "..." --use-profile
+uv run python -m automation.main --task "..." --use-profile
 
 # Enable human-in-the-loop (agent can ask for help)
-python -m automation.main --task "..." --human-in-loop
+uv run python -m automation.main --task "..." --human-in-loop
 ```
 
 ### As a Library

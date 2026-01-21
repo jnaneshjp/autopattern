@@ -85,15 +85,7 @@ def parse_args():
     return parser.parse_args()
 
 
-async def main_async():
-    args = parse_args()
-    
-    # Server mode - run API server
-    if args.server:
-        from .server import run_server
-        run_server(port=args.port)
-        return 0
-    
+async def main_async(args):
     # Validate config for workflow mode
     if not args.task:
         config.validate()
@@ -159,7 +151,15 @@ async def main_async():
 def main():
     """Entry point for CLI."""
     try:
-        exit_code = asyncio.run(main_async())
+        args = parse_args()
+        
+        # Handle server mode outside of asyncio.run to avoid event loop conflicts
+        if args.server:
+            from .server import run_server
+            run_server(port=args.port)
+            sys.exit(0)
+            
+        exit_code = asyncio.run(main_async(args))
         sys.exit(exit_code)
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user")

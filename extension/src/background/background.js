@@ -1,6 +1,8 @@
 // background.js (service worker)
 // Manages workflow recording and storage (FIXED)
 
+const API_BASE_URL = 'http://localhost:5001';
+
 let recordingState = {
     isRecording: false,
     currentWorkflow: [],
@@ -57,24 +59,115 @@ async function stopRecording() {
 
     recordingState.isRecording = false;
 
+    const events = recordingState.currentWorkflow;
+    
+    // Determine start URL from first navigation event or first event's URL
+    let startUrl = '';
+    if (events.length > 0) {
+        const firstNav = events.find(e => e.event_type === 'navigation' || e.event === 'navigation');
+        startUrl = firstNav?.url || events[0]?.url || '';
+    }
+
     const workflow = {
         name: recordingState.workflowName,
         createdAt: recordingState.startTime,
-        events: recordingState.currentWorkflow,
-        eventCount: recordingState.currentWorkflow.length,
-        schema: 'workflow-v1'
+        events: events,
+        eventCount: events.length,
+        schema: 'workflow-v1',
+        // AI-generated description (will be populated asynchronously)
+        description: null,
+        steps: null,
+        descriptionStatus: 'pending'
     };
 
     const db = await getDB();
     const tx = db.transaction('workflows', 'readwrite');
-    tx.objectStore('workflows').add(workflow);
+    const store = tx.objectStore('workflows');
+    
+    // Add the workflow and get the generated ID
+    const addRequest = store.add(workflow);
+    
+    return new Promise((resolve, reject) => {
+        addRequest.onsuccess = async () => {
+            const workflowId = addRequest.result;
+            workflow.id = workflowId;
+            
+            console.log('Workflow saved, fetching AI description...');
+            
+            // Fetch AI description asynchronously
+            fetchWorkflowDescription(workflowId, events, startUrl);
+            
+            recordingState.currentWorkflow = [];
+            recordingState.workflowName = null;
+            recordingState.startTime = null;
+            
+            resolve(workflow);
+        };
+        
+        addRequest.onerror = () => {
+            reject(addRequest.error);
+        };
+    });
+}
 
-    recordingState.currentWorkflow = [];
-    recordingState.workflowName = null;
-    recordingState.startTime = null;
-
-    console.log('Workflow saved');
-    return workflow;
+// Fetch AI description for a workflow
+async function fetchWorkflowDescription(workflowId, events, startUrl) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/describe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                events: events,
+                start_url: startUrl
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Update the workflow in IndexedDB with the description
+        const db = await getDB();
+        const tx = db.transaction('workflows', 'readwrite');
+        const store = tx.objectStore('workflows');
+        const getRequest = store.get(workflowId);
+        
+        getRequest.onsuccess = () => {
+            const workflow = getRequest.result;
+            if (workflow) {
+                workflow.aiTitle = result.title;
+                workflow.description = result.description;
+                workflow.steps = result.steps;
+                workflow.descriptionStatus = 'success';
+                store.put(workflow);
+                
+                console.log('Workflow description saved:', result.description);
+                
+                // Notify dashboard to refresh
+                chrome.runtime.sendMessage({ action: 'refresh_dashboard' }).catch(() => {});
+            }
+        };
+        
+    } catch (error) {
+        console.error('Failed to fetch workflow description:', error);
+        
+        // Update status to failed
+        const db = await getDB();
+        const tx = db.transaction('workflows', 'readwrite');
+        const store = tx.objectStore('workflows');
+        const getRequest = store.get(workflowId);
+        
+        getRequest.onsuccess = () => {
+            const workflow = getRequest.result;
+            if (workflow) {
+                workflow.descriptionStatus = 'failed';
+                workflow.descriptionError = error.message;
+                store.put(workflow);
+            }
+        };
+    }
 }
 
 // ---------- Messaging ----------
@@ -140,6 +233,54 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                     wf.name = msg.newName;
                     store.put(wf);
                     sendResponse({ status: 'ok' });
+                }
+            };
+            return true;
+        }
+
+        if (msg.action === 'UPDATE_WORKFLOW') {
+            const db = await getDB();
+            const store = db.transaction('workflows', 'readwrite').objectStore('workflows');
+            const req = store.get(msg.id);
+
+            req.onsuccess = () => {
+                const wf = req.result;
+                if (wf) {
+                    // Apply updates
+                    if (msg.updates) {
+                        Object.assign(wf, msg.updates);
+                    }
+                    store.put(wf);
+                    sendResponse({ status: 'ok' });
+                } else {
+                    sendResponse({ status: 'error', message: 'Workflow not found' });
+                }
+            };
+            
+            req.onerror = () => {
+                sendResponse({ status: 'error', message: 'Database error' });
+            };
+            return true;
+        }
+
+        // Re-fetch description for a workflow
+        if (msg.action === 'REFETCH_DESCRIPTION') {
+            const db = await getDB();
+            const store = db.transaction('workflows', 'readonly').objectStore('workflows');
+            const req = store.get(msg.id);
+
+            req.onsuccess = () => {
+                const wf = req.result;
+                if (wf && wf.events) {
+                    let startUrl = '';
+                    if (wf.events.length > 0) {
+                        const firstNav = wf.events.find(e => e.event_type === 'navigation' || e.event === 'navigation');
+                        startUrl = firstNav?.url || wf.events[0]?.url || '';
+                    }
+                    fetchWorkflowDescription(msg.id, wf.events, startUrl);
+                    sendResponse({ status: 'ok' });
+                } else {
+                    sendResponse({ status: 'error', message: 'Workflow not found' });
                 }
             };
             return true;

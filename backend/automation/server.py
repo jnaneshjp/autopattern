@@ -37,10 +37,12 @@ class WorkflowEventModel(BaseModel):
 class AutomateRequest(BaseModel):
     """Request to automate a workflow."""
     workflow_id: str = "1"
-    events: list[WorkflowEventModel]
+    events: list[WorkflowEventModel] = Field(default_factory=list)
     start_url: str = ""
     headless: bool = False
     enable_human_in_loop: bool = False
+    # Optional: pre-generated task description (bypasses LLM generation if provided)
+    task_description: Optional[str] = None
 
 
 class TaskRequest(BaseModel):
@@ -48,6 +50,19 @@ class TaskRequest(BaseModel):
     task: str
     headless: bool = False
     enable_human_in_loop: bool = False
+
+
+class DescribeRequest(BaseModel):
+    """Request to describe/analyze workflow events."""
+    events: list[WorkflowEventModel]
+    start_url: str = ""
+
+
+class DescribeResponse(BaseModel):
+    """Response from describe endpoint with structured workflow plan."""
+    title: str
+    description: str
+    steps: list[dict]
 
 
 class AutomateResponse(BaseModel):
@@ -62,6 +77,20 @@ class HealthResponse(BaseModel):
     """Health check response."""
     status: str = "ok"
     version: str = "0.2.0"
+
+
+class SettingsModel(BaseModel):
+    """Application settings."""
+    llm_model: str = "gemini-flash-latest"
+    analysis_model: str = "gemini-pro-latest"
+    headless: bool = False
+    enable_human_in_loop: bool = False
+
+
+class SettingsResponse(BaseModel):
+    """Settings response."""
+    settings: SettingsModel
+    available_models: list[str] = []
 
 
 # ============================================================================
@@ -161,49 +190,138 @@ async def health_check():
     return HealthResponse()
 
 
+# Available Gemini models
+AVAILABLE_MODELS = [
+    "gemini-flash-latest",
+    "gemini-pro-latest",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-2.0-flash",
+]
+
+# Runtime settings (can be modified via API)
+runtime_settings = SettingsModel(
+    llm_model=config.llm_model,
+    headless=config.headless,
+    enable_human_in_loop=config.enable_human_in_loop,
+)
+
+
+@app.get("/api/settings", response_model=SettingsResponse)
+async def get_settings():
+    """Get current settings."""
+    return SettingsResponse(
+        settings=runtime_settings,
+        available_models=AVAILABLE_MODELS,
+    )
+
+
+@app.put("/api/settings", response_model=SettingsResponse)
+async def update_settings(new_settings: SettingsModel):
+    """Update settings."""
+    global runtime_settings
+    runtime_settings = new_settings
+    
+    # Update config object for components that use it
+    config.llm_model = new_settings.llm_model
+    config.headless = new_settings.headless
+    config.enable_human_in_loop = new_settings.enable_human_in_loop
+    
+    return SettingsResponse(
+        settings=runtime_settings,
+        available_models=AVAILABLE_MODELS,
+    )
+
+
+@app.post("/api/describe", response_model=DescribeResponse)
+async def describe_workflow(request: DescribeRequest):
+    """
+    Analyze workflow events and generate a structured description.
+    
+    Uses gemini-pro for high reasoning capability to convert raw events
+    into a human-readable step-by-step plan that can be edited before execution.
+    """
+    try:
+        # Convert events to dict format
+        events = [
+            {
+                "event_type": e.event,
+                "timestamp": e.timestamp,
+                "url": e.url,
+                "title": e.title,
+                "data": e.data,
+            }
+            for e in request.events
+        ]
+        
+        # Generate structured workflow steps using current settings
+        llm_client = LLMClient(
+            model=runtime_settings.llm_model,
+            analysis_model=runtime_settings.analysis_model
+        )
+        result = llm_client.generate_workflow_steps(events, request.start_url)
+        
+        return DescribeResponse(
+            title=result.get("title", "Workflow"),
+            description=result.get("description", ""),
+            steps=result.get("steps", [])
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/automate", response_model=AutomateResponse)
 async def automate_workflow(request: AutomateRequest, background_tasks: BackgroundTasks):
     """
     Automate a workflow from recorded events.
     
-    Converts workflow events to a task description using LLM,
+    If task_description is provided, uses it directly.
+    Otherwise, converts workflow events to a task description using LLM,
     then executes the automation using browser-use.
     """
     try:
-        # Convert request events to Workflow object
-        events = [
-            WorkflowEvent(
-                event_type=e.event,
-                timestamp=e.timestamp,
-                url=e.url,
-                title=e.title,
-                data=e.data,
+        # If task_description is provided, use it directly (Human-in-the-Middle flow)
+        if request.task_description:
+            task_description = request.task_description
+        else:
+            # Convert request events to Workflow object
+            events = [
+                WorkflowEvent(
+                    event_type=e.event,
+                    timestamp=e.timestamp,
+                    url=e.url,
+                    title=e.title,
+                    data=e.data,
+                )
+                for e in request.events
+            ]
+            
+            workflow = Workflow(workflow_id=request.workflow_id, events=events)
+            
+            # Override start_url if provided
+            if request.start_url:
+                # Insert a navigation event at the start
+                events.insert(0, WorkflowEvent(
+                    event_type="navigation",
+                    timestamp=0,
+                    url=request.start_url,
+                    title="",
+                    data={},
+                ))
+            
+            # Generate task description using LLM with current settings
+            llm_client = LLMClient(
+                model=runtime_settings.llm_model,
+                analysis_model=runtime_settings.analysis_model
             )
-            for e in request.events
-        ]
+            task_description = llm_client.generate_task_description(workflow)
         
-        workflow = Workflow(workflow_id=request.workflow_id, events=events)
-        
-        # Override start_url if provided
-        if request.start_url:
-            # Insert a navigation event at the start
-            events.insert(0, WorkflowEvent(
-                event_type="navigation",
-                timestamp=0,
-                url=request.start_url,
-                title="",
-                data={},
-            ))
-        
-        # Generate task description
-        llm_client = LLMClient()
-        task_description = llm_client.generate_task_description(workflow)
-        
-        # Run automation
+        # Run automation with current settings
         runner = AutomationRunner(
-            headless=request.headless,
-            enable_human_in_loop=request.enable_human_in_loop,
-            human_input_callback=human_input_manager.ask_human if request.enable_human_in_loop else None,
+            headless=request.headless if request.headless else runtime_settings.headless,
+            enable_human_in_loop=request.enable_human_in_loop if request.enable_human_in_loop else runtime_settings.enable_human_in_loop,
+            human_input_callback=human_input_manager.ask_human if (request.enable_human_in_loop or runtime_settings.enable_human_in_loop) else None,
         )
         
         result = await runner.run_task(task_description)
@@ -227,10 +345,14 @@ async def automate_task(request: TaskRequest):
     Skips the LLM task generation step and executes the provided task directly.
     """
     try:
+        # Use request settings with fallback to runtime settings
+        use_headless = request.headless if request.headless else runtime_settings.headless
+        use_human_loop = request.enable_human_in_loop if request.enable_human_in_loop else runtime_settings.enable_human_in_loop
+        
         runner = AutomationRunner(
-            headless=request.headless,
-            enable_human_in_loop=request.enable_human_in_loop,
-            human_input_callback=human_input_manager.ask_human if request.enable_human_in_loop else None,
+            headless=use_headless,
+            enable_human_in_loop=use_human_loop,
+            human_input_callback=human_input_manager.ask_human if use_human_loop else None,
         )
         
         result = await runner.run_task(request.task)
